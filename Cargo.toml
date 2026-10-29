@@ -1,0 +1,37 @@
+[package]
+name = "web-rs"
+description = "The web layer of a JSON API service: one error shape, audit events, the web UI served behind sign-in, and route help read from the OpenAPI document"
+version = "0.0.0"
+edition = "2024"
+# MSRV, the same as the services that depend on this crate: a language
+# feature newer than their pinned toolchain must fail here first.
+rust-version = "1.96"
+license = "Apache-2.0"
+repository = "https://github.com/OpusProjects/web"
+readme = "README.md"
+# Consumed by git tag from the services that use it — never published to
+# crates.io
+publish = false
+
+[dependencies]
+axum = "0.8"
+serde = { version = "1", features = ["derive"] }
+# The ServeDir/ServeFile services the web UI is served with
+tower = { version = "0.5", default-features = false, features = ["util"] }
+tower-http = { version = "0.7", features = ["fs"] }
+tracing = "0.1"
+# The same major as the services: ErrorBody's schema is part of their
+# OpenAPI documents, and a schema only fits the utoipa it was derived for.
+utoipa = { version = "6", features = ["axum_extras"] }
+# API keys and browser sessions: who a request is, for the audit events and
+# for the sign-in gate in front of the web UI
+auth-rs = { git = "https://github.com/OpusProjects/auth", tag = "v0.3.0" }
+
+# [dev-dependencies] = compiled only for tests
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+# A log subscriber, so the fields of an audit event are evaluated in tests
+tracing-subscriber = "0.3"
+# The OpenAPI documents the spec tests ask about, written as JSON
+serde_json = "1"
