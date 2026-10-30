@@ -15,7 +15,11 @@ publish = false
 
 [dependencies]
 axum = "0.8"
+# A file's modification time as RFC 3339, in the config API's listing
+chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
 serde = { version = "1", features = ["derive"] }
+# Content hashes: a config file's ETag, and the directory's
+sha2 = "0.11"
 # The ServeDir/ServeFile services the web UI is served with
 tower = { version = "0.5", default-features = false, features = ["util"] }
 tower-http = { version = "0.7", features = ["fs"] }

@@ -7,6 +7,8 @@
 //
 // - `error`: ApiError and ErrorBody, the `{"error": ...}` every failure carries
 // - `audit`: one structured event per operation that changed something
+// - `config`: the configuration directory over HTTP, staged, validated whole
+//   and committed atomically
 // - `ui_assets`: the built web UI at "/", gated by sign-in, never mistaken for
 //   an API answer
 // - `spec`: what the OpenAPI document says about a route, for the pages that
@@ -18,6 +20,7 @@
 // type, as auth-rs's own types are.
 
 pub mod audit;
+pub mod config;
 pub mod error;
 pub mod spec;
 pub mod ui_assets;

@@ -8,7 +8,8 @@ The web layer of a JSON API service, written in Rust.
 
 What a service's routes do is its own; how it answers on the web does not have to be. Web holds
 that part: one error shape for every failure, an audit event for every change, the web UI served
-from the API's own address behind sign-in, and help for each route read from the OpenAPI document.
+from the API's own address behind sign-in, help for each route read from the OpenAPI document, and
+the configuration directory readable and writable over HTTP.
 
 One crate, `web-rs`, built on axum and utoipa. Who a caller is comes from the `auth-rs` crate of
 the [auth](https://github.com/OpusProjects/auth) repository, so the parts that check it are generic
@@ -26,6 +27,10 @@ over the service's own permissions type.
 - **An API miss is never the app**: `/api`, `/swagger-ui` and `/api-docs` answer JSON 404s
 - **Cached the right way**: content-named files kept for good, `index.html` asked every time
 - **Route help from the spec**: description, parameters, responses and actions of any route
+- **Config over HTTP**: read, write, validate and reload the configuration directory, admin-only
+- **Validated before it lands**: a change is loaded in a staged copy, refused whole if it fails
+- **Atomic, careful writes**: temp file and rename per file, unchanged files never rewritten
+- **ETags and If-Match**: a push against a directory someone else changed is refused, not merged
 - **Pinned by tag**: a service depends on a `vX.Y.Z` tag of this repository, never on `main`
 
 ---
@@ -34,7 +39,7 @@ over the service's own permissions type.
 
 | Document | What it covers |
 |---|---|
-| [Usage](docs/usage.md) | Errors, audit events, serving the web UI, and asking the OpenAPI document about a route |
+| [Usage](docs/usage.md) | Errors, audit events, the web UI, route help, and the configuration API |
 | [Development](docs/development.md) | The layout, the CI gates, the tests, and working on a service against a local copy |
 | [Releasing](docs/releasing.md) | How release-please cuts a version, and how a service moves to it |
 

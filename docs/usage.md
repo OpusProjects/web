@@ -8,6 +8,7 @@ its web UI, and the route help its browsable pages read from the OpenAPI documen
 - [Audit events](#audit-events)
 - [Serving the web UI](#serving-the-web-ui)
 - [Route help from the OpenAPI document](#route-help-from-the-openapi-document)
+- [The configuration API](#the-configuration-api)
 
 ---
 
@@ -121,3 +122,49 @@ let spec = SPEC.get_or_init(|| Spec::new(ApiDoc::openapi()));
 A template matches segment by segment, the way axum's router does, and the most specific template
 wins (`/config/validate` over `/config/{file}`). `/api/v1/config/{file}` takes the rest of the path,
 slashes included. An action that needs a path value the page does not have is not offered.
+
+---
+
+## The configuration API
+
+The `config` module makes a service's configuration directory readable and writable over HTTP, admin-only.
+
+| Route | What the function behind it does |
+|---|---|
+| `GET /api/v1/config` | `get_config`: every file with its hash, the directory ETag, whether it loads and whether it is running |
+| `GET /api/v1/config/{file}` | `get_config_file`: the file verbatim, its sha256 as the ETag, `304` on `If-None-Match` |
+| `PUT /api/v1/config/{file}` | `put_config_file`: one file, written whole |
+| `DELETE /api/v1/config/{file}` | `delete_config_file`: one file removed, never `config.yaml` |
+| `PUT /api/v1/config` | `put_config`: the whole directory as `{"files": {...}, "prune": bool}` |
+| `POST /api/v1/config/validate` | `validate_config`: the verdict on a directory, nothing written |
+| `POST /api/v1/config/reload` | `reload_config`: what is on disk becomes the running configuration |
+
+Every write runs the same steps in the same order:
+1. Load the directory as it would be after the change, in a staged copy beside it.
+2. If the service is asked to reload, check what the reload needs.
+3. Commit, file by file, each through a temporary file and a rename.
+4. Reload, when asked.
+
+A change that does not load is a `400` with every error at once. A write against an ETag that moved
+since it was read is a `412`. A file whose bytes are unchanged is not rewritten, so its modification
+time stays meaningful.
+
+A service gives the module three things:
+
+- **Its loader**, the function that turns a directory into its configuration, wrapped in
+  `FsConfigStore::new(dir, load)`. It is the same function startup and `--check-config` use, so
+  the API validates exactly what a restart would.
+- **A `ConfigHost`**, saying:
+  - who is an admin;
+  - what the configuration counts (`summarize`);
+  - whether a configuration differs from the running one (`pending`);
+  - what a reload needs and does: `prepare` runs before the commit and may refuse with a `409`,
+    `apply` runs after it;
+  - how to count writes and reloads in its own metrics.
+- **Its handlers**, each calling one function above with its own `#[utoipa::path]`, so the OpenAPI
+  document names its own types. `WriteResult<ConfigSummary, ReloadInfo>` is documented as a schema
+  of its own.
+
+`files::config_files` lists a directory the way the loader should read it: every `.yaml` and `.yml`
+file at any depth, hidden entries skipped, symlinks followed up to a depth cap. `is_config_path` is
+the rule a file name must meet to be written at all.
