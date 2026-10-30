@@ -13,7 +13,10 @@
 //   an API answer
 // - `spec`: what the OpenAPI document says about a route, for the pages that
 //   explain themselves
-// - `url`: escaping a value for a query string
+// - `pages`: the browsable API, a page instead of JSON when a browser asks
+// - `login`: the sign-in form, by API key or directory account, and sign-out
+// - `site`: what those pages know of the service (its name, its cookies)
+// - `url`: escaping a value for a query string, and the local-path rule
 //
 // Who a caller is comes from auth-rs (API keys and browser sessions), so
 // the gate and the audit events are generic over the service's permissions
@@ -22,10 +25,14 @@
 pub mod audit;
 pub mod config;
 pub mod error;
+pub mod login;
+pub mod pages;
+pub mod site;
 pub mod spec;
 pub mod ui_assets;
 pub mod url;
 
 pub use error::{ApiError, ErrorBody};
+pub use site::Site;
 pub use spec::Spec;
 pub use ui_assets::UiAssets;
