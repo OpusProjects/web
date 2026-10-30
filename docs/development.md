@@ -23,6 +23,9 @@ src/
 ├── ui_assets.rs              # UiAssets, serve, page_for_browsers
 ├── spec.rs                   # Spec: route help from the OpenAPI document
 ├── config/                   # files (which files), store (staged, atomic), api (the routes' logic)
+├── site.rs                   # Site: the service's name, document and cookies
+├── pages.rs                  # the browsable API (negotiate, page)
+├── login.rs                  # the sign-in form and its routes, SignIn
 └── url.rs                    # query_escape
 tests/                        # integration tests: a real router, a JSON document, a log subscriber
 docs/                         # this documentation
@@ -61,6 +64,8 @@ Every line of the crate runs in a test, and the `test` check fails a pull reques
 | `tests/spec_test.rs` | `Spec` asked about a small OpenAPI document written as JSON |
 | `tests/audit_test.rs` | An audit event read back from a log subscriber |
 | `tests/config_store_test.rs` | `FsConfigStore` on real directories, with a stand-in loader, including what the filesystem refuses |
+| `tests/pages_test.rs` | `negotiate` in a real router: pages, themes, what is left alone, bodies too big to draw |
+| `tests/login_test.rs` | The sign-in routes with a test directory: keys, accounts, every refusal, sign-out |
 | `tests/config_api_test.rs` | Every config route against a test `ConfigHost` and a store that fails on purpose |
 
 Test code under `tests/` is not counted by `cargo llvm-cov`, which is why helpers live there.

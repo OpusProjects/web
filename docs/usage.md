@@ -9,6 +9,9 @@ its web UI, and the route help its browsable pages read from the OpenAPI documen
 - [Serving the web UI](#serving-the-web-ui)
 - [Route help from the OpenAPI document](#route-help-from-the-openapi-document)
 - [The configuration API](#the-configuration-api)
+- [The service's Site](#the-services-site)
+- [Browsable pages](#browsable-pages)
+- [The sign-in form](#the-sign-in-form)
 
 ---
 
@@ -168,3 +171,77 @@ A service gives the module three things:
 `files::config_files` lists a directory the way the loader should read it: every `.yaml` and `.yml`
 file at any depth, hidden entries skipped, symlinks followed up to a depth cap. `is_config_path` is
 the rule a file name must meet to be written at all.
+
+---
+
+## The service's Site
+
+`Site` is what the pages and the sign-in form know about the service, fixed for the life of the process.
+
+| Field | What it is |
+|---|---|
+| `product` | The name in every page's title and header |
+| `spec` | The service's `Spec`, built once from its OpenAPI document |
+| `session_cookie`, `login_cookie`, `theme_cookie` | The cookie names, so two services on one host never overwrite each other's |
+| `raw_routes` | Route templates whose body is the service's product (an output it serves), never drawn as a page |
+
+---
+
+## Browsable pages
+
+`pages::negotiate` is a middleware: the same route answers JSON to a client and a page to a browser.
+
+```rust
+router.layer(middleware::from_fn_with_state(site(), web_rs::pages::negotiate))
+```
+
+A request whose `Accept` names `text/html` gets the JSON drawn as a page.
+
+What the page shows:
+- every value escaped;
+- every path the document answers with a GET, as a link;
+- breadcrumbs that link only real routes;
+- the route's help from the document (description, parameters, responses, the methods it allows);
+- for a signed-in browser, a button for each write the object's own `related` declares, with the
+  session's CSRF token in its form.
+
+Left as they are:
+- `?format=json` gives the bytes back;
+- a response that is not JSON passes through;
+- a route in `raw_routes` passes through.
+
+A body too large to draw sends the browser to the first page (`?limit=200`) when the route pages,
+and to a short explanation when it does not. A window the caller named is drawn whatever its size.
+
+Pages are served with a CSP that allows only their inline style, `Cache-Control: no-store`, and
+`Vary: accept, cookie`. `?theme=` picks one of six palettes and the theme cookie remembers it.
+
+---
+
+## The sign-in form
+
+`login` holds the routes behind the sign-in form: an API key or a directory account becomes a browser session.
+
+| Function | Route |
+|---|---|
+| `login_form(site, sign_in, next, headers)` | `GET /api/v1/login`: the form, with a fresh challenge |
+| `login_submit(site, sign_in, keys, sessions, ttl, headers, form)` | `POST /api/v1/login`: checks it, opens the session, redirects to `next` |
+| `logout(site, sessions, headers, next)` | `POST /api/v1/logout`: ends the session server-side |
+
+The form only accepts a submission paired with the challenge cookie it planted, so a page on another
+site cannot sign a browser in under someone else's key. `next` must be a path on this origin, or
+the service's home is used instead. An API key is checked against the key registry in constant time.
+A directory account goes through the service's `SignIn`:
+
+```rust
+impl SignIn<Permissions> for Directory<'_> {
+    fn ldap_enabled(&self) -> bool { ... }
+    fn home(&self) -> String { ... }
+    async fn ldap_login(&self, username: &str, password: &str)
+        -> Result<(String, Permissions), LoginError> { ... }
+}
+```
+
+What an account may touch comes from the service's own access rules, which is why checking it is
+the service's: `ldap_login` answers the account's name and its permissions, or one of the
+`LoginError`s. Each error is shown in its own words, with a status that tells the cases apart.
