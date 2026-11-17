@@ -15,8 +15,10 @@ publish = false
 
 [dependencies]
 axum = "0.8"
-# A file's modification time as RFC 3339, in the config API's listing
-chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+# A file's modification time as RFC 3339, in the config API's listing. 0.2,
+# the line croner uses, so a service carries a single jiff. Only UTC is ever
+# formatted, so none of the time zone database features.
+jiff = { version = "0.2", default-features = false, features = ["std"] }
 serde = { version = "1", features = ["derive"] }
 # Content hashes: a config file's ETag, and the directory's
 sha2 = "0.11"
