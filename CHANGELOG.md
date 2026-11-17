@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.1](https://github.com/OpusProjects/web/compare/v0.3.0...v0.3.1) (2026-11-17)
+
+
+### Fixed
+
+* drop chrono, and cover the lines rust 1.100 counts ([#6](https://github.com/OpusProjects/web/issues/6)) ([78984e2](https://github.com/OpusProjects/web/commit/78984e21b468d43edc768240d7abff7735cef652))
+
 ## [0.3.0](https://github.com/OpusProjects/web/compare/v0.2.0...v0.3.0) (2026-10-30)
 
 
