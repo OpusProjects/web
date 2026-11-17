@@ -236,8 +236,27 @@ fn known_file(name: &str) -> Result<(), ApiError> {
     }
 }
 
-fn rfc3339(time: std::time::SystemTime) -> String {
-    chrono::DateTime::<chrono::Utc>::from(time).to_rfc3339()
+// The exact shape chrono's to_rfc3339 gave, which this listing used before:
+// a `+00:00` offset rather than `Z`, and the fraction in groups of three
+// digits (none, milliseconds, microseconds or nanoseconds), so a client that
+// compares or parses these strings sees no change. None only for a time
+// outside jiff's range (beyond year 9999), which no file system reports.
+fn rfc3339(time: std::time::SystemTime) -> Option<String> {
+    let at = jiff::tz::TimeZone::UTC.to_datetime(jiff::Timestamp::try_from(time).ok()?);
+    let nanos = at.subsec_nanosecond();
+    let fraction = if nanos == 0 {
+        String::new()
+    } else if nanos % 1_000_000 == 0 {
+        format!(".{:03}", nanos / 1_000_000)
+    } else if nanos % 1_000 == 0 {
+        format!(".{:06}", nanos / 1_000)
+    } else {
+        format!(".{nanos:09}")
+    };
+    Some(format!(
+        "{}{fraction}+00:00",
+        at.strftime("%Y-%m-%dT%H:%M:%S")
+    ))
 }
 
 fn file_info(stat: &ConfigFileStat) -> ConfigFileInfo {
@@ -245,7 +264,7 @@ fn file_info(stat: &ConfigFileStat) -> ConfigFileInfo {
         name: stat.name.clone(),
         size: stat.size,
         sha256: stat.sha256.clone(),
-        modified: stat.modified.map(rfc3339),
+        modified: stat.modified.and_then(rfc3339),
     }
 }
 
@@ -622,4 +641,37 @@ fn deleted_names<C>(
     deleted.sort();
     deleted.dedup();
     Ok(deleted)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{Duration, UNIX_EPOCH};
+
+    // The strings chrono's to_rfc3339 gave for the same instants: the listing
+    // keeps that exact shape.
+    #[test]
+    fn rfc3339_keeps_the_shape_chrono_gave() {
+        let at = |secs, nanos| rfc3339(UNIX_EPOCH + Duration::new(secs, nanos)).unwrap();
+        assert_eq!(at(1_700_000_000, 0), "2023-11-14T22:13:20+00:00");
+        assert_eq!(
+            at(1_700_000_000, 500_000_000),
+            "2023-11-14T22:13:20.500+00:00"
+        );
+        assert_eq!(
+            at(1_700_000_000, 250_000),
+            "2023-11-14T22:13:20.000250+00:00"
+        );
+        assert_eq!(at(1_700_000_000, 7), "2023-11-14T22:13:20.000000007+00:00");
+        assert_eq!(
+            rfc3339(UNIX_EPOCH - Duration::from_nanos(1)).unwrap(),
+            "1969-12-31T23:59:59.999999999+00:00"
+        );
+    }
+
+    #[test]
+    fn a_time_past_year_9999_has_no_rfc3339() {
+        let far = UNIX_EPOCH + Duration::from_secs(400_000_000_000);
+        assert_eq!(rfc3339(far), None);
+    }
 }

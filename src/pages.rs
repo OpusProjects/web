@@ -1150,6 +1150,14 @@ mod tests {
         let html = page(&ctx("/api/v1/sources/src-d42", &headers), &json!({}));
         assert!(html.contains("Allow:"));
         assert!(html.contains("DELETE"));
+
+        // A path the spec does not document has no Allow line to show; the
+        // response headers worth showing are listed either way.
+        let mut headers = HeaderMap::new();
+        headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
+        let html = page(&ctx("/api/v1/nowhere", &headers), &json!({}));
+        assert!(!html.contains("Allow:"));
+        assert!(html.contains("application/json"));
     }
 
     // Pressing Sync now lands on a POST-only path; the theme links there must
