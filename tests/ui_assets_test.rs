@@ -188,3 +188,35 @@ async fn a_build_without_its_index_still_answers() {
     let resp = ask(&app, "GET", "/sources", &[PAGE]).await;
     assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
+
+// Collects what the subscriber writes, so the startup warning can be read.
+#[derive(Clone, Default)]
+struct Captured(Arc<std::sync::Mutex<Vec<u8>>>);
+
+impl std::io::Write for Captured {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().extend_from_slice(buf);
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+// A wrong ui directory is said once, at startup, naming the directory.
+#[test]
+fn a_directory_without_index_html_is_warned_at_startup() {
+    let empty = tempfile::tempdir().unwrap();
+    let captured = Captured::default();
+    let writer = captured.clone();
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(move || writer.clone())
+        .with_ansi(false)
+        .finish();
+    tracing::subscriber::with_default(subscriber, || {
+        let _ = UiAssets::<Perm>::new(empty.path(), COOKIE);
+    });
+    let log = String::from_utf8(captured.0.lock().unwrap().clone()).unwrap();
+    assert!(log.contains("no index.html"), "{log}");
+    assert!(log.contains(&empty.path().display().to_string()), "{log}");
+}

@@ -39,3 +39,6 @@ tempfile = "3"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # A log subscriber, so the fields of an audit event are evaluated in tests
 tracing-subscriber = "0.3"
+# A `log` logger for tests/log_fallback_test.rs: with no tracing subscriber,
+# tracing hands its events to the log crate (axum turns that feature on)
+log = { version = "0.4", features = ["std"] }
