@@ -45,8 +45,12 @@ fn events_reach_a_log_logger_when_there_is_no_tracing_subscriber() {
     web_rs::audit::record(&auth, &HeaderMap::new(), "sync", "src-a", "ok");
     let empty = tempfile::tempdir().unwrap();
     let _ = UiAssets::<Perm>::new(empty.path(), "test_session");
+    // A built UI is not worth a line.
+    let built = tempfile::tempdir().unwrap();
+    std::fs::write(built.path().join("index.html"), "app").unwrap();
+    let _ = UiAssets::<Perm>::new(built.path(), "test_session");
 
     let lines = LOGGER.0.lock().unwrap().join("\n");
     assert!(lines.contains("audit") && lines.contains("AWX"), "{lines}");
-    assert!(lines.contains("no index.html"), "{lines}");
+    assert_eq!(lines.matches("no index.html").count(), 1, "{lines}");
 }
