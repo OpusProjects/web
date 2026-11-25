@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.2](https://github.com/OpusProjects/web/compare/v0.3.1...v0.3.2) (2026-11-25)
+
+
+### Fixed
+
+* **deps:** bump url to 2.5.9 for RUSTSEC-2026-0592 ([#10](https://github.com/OpusProjects/web/issues/10)) ([7823795](https://github.com/OpusProjects/web/commit/78237953535e99c25b6a558e6d77e47ef875bb92))
+
 ## [0.3.1](https://github.com/OpusProjects/web/compare/v0.3.0...v0.3.1) (2026-11-17)
 
 
